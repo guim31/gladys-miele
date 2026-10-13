@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-13
+
 ### Added
 
 - Miele@home appliances in Gladys through the official Miele 3rd Party API:
@@ -34,4 +36,5 @@ the notes of the version's GitHub Release.
 - English, French, German and Spanish everywhere, including the
   documentation.
 
-[Unreleased]: https://github.com/guim31/gladys-miele/commits/main
+[Unreleased]: https://github.com/guim31/gladys-miele/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/guim31/gladys-miele/releases/tag/v1.0.1
