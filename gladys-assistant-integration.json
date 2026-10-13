@@ -1,177 +1,384 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Miele",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Miele@home appliances: state, program, time left, temperatures and end-of-cycle scenes.",
+    "fr": "Électroménager Miele@home : état, programme, temps restant, températures, scènes de fin de cycle.",
+    "de": "Miele@home-Geräte: Zustand, Programm, Restzeit, Temperaturen und Szenen bei Programmende.",
+    "es": "Electrodomésticos Miele@home: estado, programa, tiempo restante, temperaturas y escenas."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-miele:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-miele/main/cover.png",
+  "categories": ["appliances"],
+  "transports": ["cloud"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Before you start",
+        "fr": "Avant de commencer",
+        "de": "Bevor du anfängst",
+        "es": "Antes de empezar"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Miele has no local API: everything goes through the Miele cloud, with the account of the Miele app. Ask Miele for free developer credentials (client ID and client secret, sent by e-mail), paste them below and save. If Miele asks for a redirect URI, copy the one shown under the Connect button. Then click Connect and sign in with your Miele account.",
+        "fr": "Miele n'a pas d'API locale : tout passe par le cloud Miele, avec le compte de l'application Miele. Demandez à Miele des identifiants développeur gratuits (Client ID et Client Secret, envoyés par e-mail), collez-les ci-dessous et enregistrez. Si Miele demande une URI de redirection, copiez celle affichée sous le bouton Connecter. Cliquez ensuite sur Connecter et identifiez-vous avec votre compte Miele.",
+        "de": "Miele hat keine lokale API: alles läuft über die Miele-Cloud, mit dem Konto der Miele-App. Fordere bei Miele kostenlose Entwickler-Zugangsdaten an (Client-ID und Client-Secret, per E-Mail), füge sie unten ein und speichere. Fragt Miele nach einer Weiterleitungs-URI, kopiere die unter dem Button Verbinden angezeigte. Klick dann auf Verbinden und melde dich mit deinem Miele-Konto an.",
+        "es": "Miele no tiene API local: todo pasa por la nube de Miele, con la cuenta de la aplicación Miele. Solicite a Miele credenciales de desarrollador gratuitas (Client ID y Client Secret, enviadas por correo), péguelas abajo y guarde. Si Miele pide una URI de redirección, copie la que aparece bajo el botón Conectar. Después haga clic en Conectar e inicie sesión con su cuenta Miele."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://www.miele.com/f/com/en/register_api.aspx",
+          "label": {
+            "en": "Request Miele API credentials",
+            "fr": "Demander les identifiants API Miele",
+            "de": "Miele-API-Zugangsdaten anfordern",
+            "es": "Solicitar credenciales de la API Miele"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
+      "key": "client_id",
+      "type": "string",
       "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "label": {
+        "en": "Client ID",
+        "fr": "Client ID",
+        "de": "Client-ID",
+        "es": "Client ID"
+      },
+      "description": {
+        "en": "Client ID sent by Miele.",
+        "fr": "Client ID envoyé par Miele.",
+        "de": "Von Miele gesendete Client-ID.",
+        "es": "Client ID enviado por Miele."
+      },
+      "placeholder": {
+        "en": "e.g. 1a2b3c4d-…",
+        "fr": "ex. 1a2b3c4d-…",
+        "de": "z. B. 1a2b3c4d-…",
+        "es": "p. ej. 1a2b3c4d-…"
+      }
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
+      "key": "client_secret",
+      "type": "secret",
       "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "label": {
+        "en": "Client secret",
+        "fr": "Client Secret",
+        "de": "Client-Secret",
+        "es": "Client Secret"
+      },
+      "description": {
+        "en": "Client secret sent by Miele, never shown again.",
+        "fr": "Client Secret envoyé par Miele, jamais réaffiché.",
+        "de": "Von Miele gesendetes Client-Secret, wird nie wieder angezeigt.",
+        "es": "Client Secret enviado por Miele, no se vuelve a mostrar."
+      }
     },
     {
-      "key": "unit",
+      "key": "account",
+      "type": "oauth2",
+      "label": {
+        "en": "Miele account",
+        "fr": "Compte Miele",
+        "de": "Miele-Konto",
+        "es": "Cuenta Miele"
+      },
+      "description": {
+        "en": "Sign in with the Miele account your appliances are paired with in the Miele app.",
+        "fr": "Identifiez-vous avec le compte Miele auquel vos appareils sont associés dans l'application Miele.",
+        "de": "Melde dich mit dem Miele-Konto an, mit dem deine Geräte in der Miele-App verbunden sind.",
+        "es": "Inicie sesión con la cuenta Miele a la que sus aparatos están vinculados en la aplicación Miele."
+      }
+    },
+    {
+      "key": "language",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
       "required": false,
-      "default": "celsius",
-      "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
-      ]
-    },
-    {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
-      "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+      "default": "fr",
+      "label": {
+        "en": "Language",
+        "fr": "Langue",
+        "de": "Sprache",
+        "es": "Idioma"
       },
-      "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "description": {
+        "en": "Feature names of new devices, states and widget. Program names come from Miele, in English or German.",
+        "fr": "Noms des fonctionnalités des nouveaux appareils, états et widget. Les programmes viennent de Miele, en anglais ou en allemand.",
+        "de": "Funktionsnamen neuer Geräte, Zustände und Widget. Programmnamen kommen von Miele, auf Englisch oder Deutsch.",
+        "es": "Nombres de las funciones de los nuevos aparatos, estados y widget. Los programas vienen de Miele, en inglés o alemán."
+      },
+      "options": [
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
       "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "program_finished",
+      "label": {
+        "en": "Miele program finished",
+        "fr": "Programme Miele terminé",
+        "de": "Miele-Programm beendet",
+        "es": "Programa Miele terminado"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "A washing machine, dryer, dishwasher or oven reached the end of its program.",
+        "fr": "Un lave-linge, sèche-linge, lave-vaisselle ou four a terminé son programme.",
+        "de": "Eine Waschmaschine, ein Trockner, Geschirrspüler oder Backofen hat das Programm beendet.",
+        "es": "Una lavadora, secadora, lavavajillas u horno ha terminado su programa."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "label": {
+            "en": "Appliance",
+            "fr": "Appareil",
+            "de": "Gerät",
+            "es": "Aparato"
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "device_name",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Appliance name",
+            "fr": "Nom de l'appareil",
+            "de": "Gerätename",
+            "es": "Nombre del aparato"
+          }
+        },
+        {
+          "key": "program",
+          "type": "string",
+          "label": {
+            "en": "Program",
+            "fr": "Programme",
+            "de": "Programm",
+            "es": "Programa"
+          }
+        },
+        {
+          "key": "energy_kwh",
+          "type": "number",
+          "label": {
+            "en": "Energy used (kWh)",
+            "fr": "Énergie consommée (kWh)",
+            "de": "Verbrauchte Energie (kWh)",
+            "es": "Energía consumida (kWh)"
+          }
+        },
+        {
+          "key": "water_liters",
+          "type": "number",
+          "label": {
+            "en": "Water used (liters)",
+            "fr": "Eau consommée (litres)",
+            "de": "Verbrauchtes Wasser (Liter)",
+            "es": "Agua consumida (litros)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "appliance_failure",
+      "label": {
+        "en": "Miele appliance fault",
+        "fr": "Défaut d’un appareil Miele",
+        "de": "Störung eines Miele-Geräts",
+        "es": "Avería de un aparato Miele"
+      },
+      "description": {
+        "en": "An appliance reports a fault (state Fault or fault signal).",
+        "fr": "Un appareil signale un défaut (état Défaut ou signal de défaut).",
+        "de": "Ein Gerät meldet eine Störung (Zustand Störung oder Störungssignal).",
+        "es": "Un aparato indica una avería (estado Avería o señal de avería)."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Appliance",
+            "fr": "Appareil",
+            "de": "Gerät",
+            "es": "Aparato"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Appliance name",
+            "fr": "Nom de l'appareil",
+            "de": "Gerätename",
+            "es": "Nombre del aparato"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "appliance_command",
+      "label": {
+        "en": "Control a Miele appliance",
+        "fr": "Piloter un appareil Miele",
+        "de": "Miele-Gerät steuern",
+        "es": "Controlar un aparato Miele"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Start, pause or stop the program set on the appliance (start needs Remote Start). Never starts a cooking appliance.",
+        "fr": "Démarre, met en pause ou arrête le programme réglé sur l'appareil (démarrer exige Remote Start). Jamais un appareil de cuisson.",
+        "de": "Startet, pausiert oder stoppt das am Gerät eingestellte Programm (Start braucht Remote Start). Nie ein Kochgerät.",
+        "es": "Inicia, pausa o detiene el programa ajustado en el aparato (iniciar requiere Remote Start). Nunca un aparato de cocción."
+      },
+      "timeout_seconds": 20,
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Appliance",
+            "fr": "Appareil",
+            "de": "Gerät",
+            "es": "Aparato"
+          },
           "required": true
+        },
+        {
+          "key": "command",
+          "type": "select",
+          "required": true,
+          "label": {
+            "en": "Command",
+            "fr": "Commande",
+            "de": "Befehl",
+            "es": "Orden"
+          },
+          "options": [
+            {
+              "value": "start",
+              "label": {
+                "en": "Start",
+                "fr": "Démarrer",
+                "de": "Starten",
+                "es": "Iniciar"
+              }
+            },
+            {
+              "value": "pause",
+              "label": {
+                "en": "Pause",
+                "fr": "Mettre en pause",
+                "de": "Pausieren",
+                "es": "Pausar"
+              }
+            },
+            {
+              "value": "stop",
+              "label": {
+                "en": "Stop",
+                "fr": "Arrêter",
+                "de": "Stoppen",
+                "es": "Detener"
+              }
+            }
+          ]
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
+          "key": "sent",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": {
+            "en": "Command sent",
+            "fr": "Commande envoyée",
+            "de": "Befehl gesendet",
+            "es": "Orden enviada"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "running_appliances",
+      "label": {
+        "en": "Miele appliances",
+        "fr": "Appareils Miele",
+        "de": "Miele-Geräte",
+        "es": "Aparatos Miele"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Appliances running, time left and expected end.",
+        "fr": "Appareils en marche, temps restant et fin prévue.",
+        "de": "Laufende Geräte, Restzeit und voraussichtliches Ende.",
+        "es": "Aparatos en marcha, tiempo restante y fin previsto."
+      },
+      "icon": "clock"
     }
   ]
 }

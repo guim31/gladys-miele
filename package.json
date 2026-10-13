@@ -1,12 +1,13 @@
 {
-  "name": "gladys-integration-template-js",
+  "name": "gladys-miele",
   "version": "1.0.0",
   "private": true,
-  "description": "Official starter template to build an external integration for Gladys Assistant with the JavaScript SDK.",
+  "description": "Miele@home appliances in Gladys Assistant, through the official Miele 3rd Party API.",
   "type": "module",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "probe": "node scripts/probe.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

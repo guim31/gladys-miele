@@ -1,61 +1,219 @@
-# Demo Devices Template
+# Miele
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+Follow your **Miele@home** appliances in Gladys: washing machines, tumble dryers,
+dishwashers, ovens, cooker hoods, hobs, fridges, freezers, wine units, coffee
+machines and robot vacuum cleaners. The integration uses the official "Miele 3rd
+Party API", the same one Home Assistant uses.
 
-## What you get
+> **Developed without the hardware nor a Miele account: feedback welcome.** The
+> code is checked against real answers of the API published by the Home Assistant
+> project, not yet on a real appliance.
+>
+> Community integration, **not affiliated with Miele**. Miele and Miele@home are
+> trademarks of Miele & Cie. KG.
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+## Overview
+
+- **One Gladys device per Miele appliance**: state (running, paused, finished,
+  fault…), current program and phase, time left, elapsed time, expected end, door,
+  temperatures, energy and water used by the cycle.
+- **Real time**: the integration listens to Miele's event stream. A finished wash
+  is known within seconds.
+- **Safe commands**: on/off of a washing machine, dishwasher, cooker hood or coffee
+  machine, lights, setpoint and SuperCool/SuperFreeze of a fridge or freezer,
+  starting a program prepared on the machine. **An oven or a hob is never turned on
+  remotely.**
+- **Scene triggers**: "Miele program finished" and "Miele appliance fault".
+- **Widget** "Miele appliances": what is running, and for how long.
+
+## Requirements
+
+- Gladys Assistant **5.1.0** or newer.
+- Miele@home appliances **already paired** in the Miele app (smartphone), with the
+  Miele account you will use here.
+- Internet access for Gladys: everything goes through the Miele cloud, there is no
+  local API.
+- **Miele developer credentials** (client ID and client secret), free: see step 1
+  below.
+- **Gladys Plus is not needed.**
 
 ## Configuration
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+**Step 1 — Ask Miele for credentials.** Open
+[Miele's form](https://www.miele.com/f/com/en/register_api.aspx) and fill it in
+(application name: for instance "Gladys"). Miele e-mails you a **client ID** and a
+**client secret**. If the form asks for a "redirect URI", give the one Gladys shows
+in step 3 (by default `https://my.gladysassistant.com/redirect/oauth`).
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+**Step 2 — Install the integration.** In Gladys: **Integrations → Miele** (store)
+or **Integrations → Install from GitHub** with the address
+`https://github.com/guim31/gladys-miele`.
 
-## Actions
+**Step 3 — Fill in and connect.** On the **Configuration** screen of the
+integration:
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+1. paste the **client ID** and the **client secret**, pick the **language**, then
+   **Save**;
+2. under "Miele account", copy the redirect URI shown if needed, then click
+   **Connect**;
+3. a Miele window opens: sign in with your Miele account (the one of the app),
+   choose your country if asked, then allow the access;
+4. the window closes, the connection badge turns green.
 
-## Scenes
+**Step 4 — Add the appliances.** Open the **Discover** tab of the integration:
+every Miele appliance of the account shows there. Click **Add to Gladys** for the
+ones you want to follow. Their states arrive right away.
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+The **Test the connection** button of the Configuration screen lists the appliances
+Miele returns: handy to check that everything is in place.
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+The chosen **language** names the features of new devices, the states and the
+widget. The **program and phase names** come from Miele, which gives them in English
+or German only (German if you choose German, English otherwise).
 
-## Dashboard
+## What each device does
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+| Appliance                                   | Features                                                                                                                                                                |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Washing machine, washer-dryer               | State, program, phase, time left, elapsed time, expected end, door, on/off, energy and water of the cycle                                                               |
+| Tumble dryer                                | The same, without water                                                                                                                                                 |
+| Dishwasher                                  | State, program, phase, time left, elapsed time, expected end, door, on/off, energy and water of the cycle                                                               |
+| Oven, steam oven, microwave, warming drawer | State, program, phase, time left, elapsed time, expected end, door, temperature, set temperature and food probe temperature (read only), light (depending on the model) |
+| Hob                                         | State (read only)                                                                                                                                                       |
+| Cooker hood                                 | State, on/off, light                                                                                                                                                    |
+| Fridge, freezer, wine unit                  | State, door, temperature and setpoint of each zone, SuperCool and/or SuperFreeze, light (wine units)                                                                    |
+| Coffee machine                              | State, program, phase, door, on/off, light                                                                                                                              |
+| Robot vacuum cleaner                        | State, program, phase, battery                                                                                                                                          |
+
+A few details:
+
+- **Expected end**: end time computed from the time left (and from the delayed
+  start if any), in the time zone of Gladys. "—" when nothing runs or the program
+  is paused.
+- **Door**: an opening sensor, open or closed.
+- **Energy and water of the cycle**: what Miele reports for the current or the last
+  cycle, when the appliance measures it ("EcoFeedback"). The value of the last
+  cycle stays while the appliance is off.
+- **Fridge setpoint**: one degree per step, within the range the appliance accepts
+  (usually 1 to 9 °C in the fridge, −28 to −14 °C in the freezer).
+- An appliance no longer connected to the Miele cloud shows "Not connected" and
+  the "unreachable" badge.
+
+## Commands and safety
+
+- **What can be controlled**: on/off (washing machine, tumble dryer, dishwasher,
+  cooker hood, coffee machine), lights (hood, ovens, coffee machine, wine units),
+  setpoint and SuperCool/SuperFreeze (cold appliances), and the scene action
+  "Control a Miele appliance" (start, pause, stop).
+- **What never is**: turning on an oven, a hob, a microwave or a warming drawer,
+  changing its temperature, starting a program on it. Even if the Miele API allowed
+  it, the integration refuses. Stopping an oven program stays possible.
+- **Starting a program** remotely needs the appliance to accept it: a program chosen
+  on the machine, the door closed and **Remote Start** (or **MobileStart**,
+  depending on the model) enabled on the appliance. Otherwise the integration
+  answers "The appliance does not accept this command now".
+- **Delayed start**: set the program on the machine with Remote Start, then let a
+  scheduled Gladys scene start it at the right time (off-peak hours). A delayed
+  start set on the appliance itself (SmartStart included) shows as the state
+  "Waiting to start" and in the expected end.
+
+## Refresh and quotas
+
+- The integration keeps **one event stream** open at Miele: every change arrives
+  within seconds, with no extra request.
+- On top of it, it **reads the whole account every 30 minutes** (one request, plus
+  one per controllable appliance). If the stream is down, it reads **every
+  2 minutes** until it is back.
+- It does not depend on the polling of Gladys (unreliable for external
+  integrations): it refreshes by itself.
+- Miele publishes no figure for the quota of its API; this pace stays well below
+  Home Assistant's (one read every 2 minutes, all the time). Miele's terms of use
+  apply to your credentials.
+- Only the **changes** are sent to Gladys, plus a reminder every 6 hours of a value
+  that does not move (otherwise Gladys would consider it stale).
+
+## Widget
+
+The **Miele appliances** widget (Dashboard → Edit → add a widget → Miele) lists the
+appliances added to Gladys that are running, paused, waiting for a delayed start,
+finished or in fault, the most urgent first: program, phase, end time and a badge
+with the time left or the state. Fridges, always "running", are left out. It
+updates every minute and as soon as an appliance starts or stops. It has no
+setting.
+
+## Scene triggers and actions
+
+**Trigger "Miele program finished"**: an appliance goes from "Running" (or
+"Paused") to "Finished". Optional filter: the appliance. Variables for the
+following actions: appliance name, program, energy used (kWh) and water used
+(liters) when Miele gives them. It fires once per end of program, never when Gladys
+restarts.
+
+**Trigger "Miele appliance fault"**: an appliance goes to the "Fault" state or
+reports a failure. Optional filter: the appliance. Variable: appliance name.
+
+**Action "Control a Miele appliance"**: start, pause or stop the program of an
+appliance. Start and pause: washing machines, tumble dryers, dishwashers only.
+Stop: also ovens, cooker hood and coffee machine. Output: "Command sent". When
+refused, the action fails with the reason and the scene goes on.
+
+No "door open too long" trigger: the standard Gladys trigger on the door (opening
+sensor) with the **"for"** option already does it, on any appliance.
+
+## Scene examples
+
+- **Laundry done**: trigger "Miele program finished" (appliance: the washing
+  machine) → send a message "The laundry is done ({{triggerEvent.data.program}},
+  {{triggerEvent.data.energy_kwh}} kWh)".
+- **Dishwasher in off-peak hours**: prepare the program in the evening with Remote
+  Start enabled; a scene scheduled at 1:30 am runs "Control a Miele appliance →
+  Start".
+- **Freezer left open**: trigger "Freezer door = open for 3 minutes" →
+  notification.
+- **Breakdown**: trigger "Miele appliance fault" → message with
+  `{{triggerEvent.data.device_name}}`.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **"Fill in the client ID and client secret…"**: the fields are empty or not
+  saved.
+- **The Miele window refuses the sign-in or the redirect URI**: check the client
+  ID; if your Miele application has a registered redirect URI, it must be exactly
+  the one shown under "Miele account".
+- **"This sign-in expired…"**: more than 15 minutes between the click on Connect
+  and the end of the sign-in, or a sign-in started from another Gladys. Click
+  Connect again.
+- **"Miele refused the saved authorization"**: the access was revoked, the Miele
+  password changed or the client ID was modified: click Connect.
+- **No appliance in Discover**: the **Test the connection** button tells what
+  Miele returns. An empty account means the appliances are paired with another
+  Miele account.
+- **"The appliance does not accept this command now"**: door open, no program
+  chosen, Remote Start/MobileStart disabled, or the appliance is already in the
+  requested state.
+- **Logs**: nothing is written during normal operation. To see everything, give the
+  container the variable `LOG_LEVEL=debug`. No token nor secret is ever logged.
+
+## Limitations
+
+- No remote choice of the program (no program list in Gladys): the one prepared on
+  the machine is started.
+- Program and phase names in English or German (a limit of the Miele API).
+- No control of ovens, hobs and microwaves (a safety choice), nor of the robot
+  vacuum cleaner, nor of the hood fan speed.
+- TwinDos/PowerDisk levels, the zones of a hob and a delayed start set remotely
+  are not covered.
+- Depends on the Miele cloud: without Internet or during a Miele outage, no more
+  updates (the appliances work normally).
+- Feature names are frozen when the device is added: changing the language only
+  renames new devices (the states do change language).
+
+## Data and privacy
+
+- The **Miele access tokens** are kept in the `/data` volume of the integration (a
+  file only it can read), never in the Gladys configuration nor in the logs.
+- The **client secret** is a Gladys secret field: it is never shown again.
+- The sign-in happens on Miele's page: the integration never sees your password.
+  The Gladys redirect page (`my.gladysassistant.com`) only sends your browser back
+  to your Gladys; the code it sees passing is useless without the client secret.
+- The integration only talks to `api.mcs3.miele.com`.
