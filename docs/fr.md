@@ -1,67 +1,231 @@
-# Template de démonstration
+# Miele
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Suivez votre électroménager **Miele@home** dans Gladys : lave-linge, sèche-linge,
+lave-vaisselle, fours, hottes, tables de cuisson, réfrigérateurs, congélateurs,
+caves à vin, machines à café et robots aspirateurs. L'intégration passe par l'API
+officielle « Miele 3rd Party API », la même que celle de Home Assistant.
 
-## Ce que vous obtenez
+> **Développée sans le matériel ni le compte Miele : vos retours sont les
+> bienvenus.** Le code est vérifié sur les réponses réelles de l'API publiées par
+> le projet Home Assistant, pas encore sur un appareil réel.
+>
+> Intégration communautaire, **sans lien avec Miele**. Miele et Miele@home sont des
+> marques de Miele & Cie. KG.
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Présentation
+
+- **Un appareil Gladys par appareil Miele** : état (en marche, en pause, terminé,
+  défaut…), programme et phase en cours, temps restant, temps écoulé, heure de fin
+  prévue, porte, températures, énergie et eau du cycle.
+- **Temps réel** : l'intégration écoute le flux d'événements de Miele. Une lessive
+  terminée est connue en quelques secondes.
+- **Commandes sans danger** : marche/arrêt d'un lave-linge, lave-vaisselle, d'une
+  hotte ou d'une machine à café, éclairage, consigne et SuperFroid/SuperFrost d'un
+  réfrigérateur ou d'un congélateur, démarrage d'un programme préparé sur la machine.
+  **Jamais d'allumage de four ni de table de cuisson à distance.**
+- **Déclencheurs de scène** : « Programme Miele terminé » et « Défaut d'un appareil
+  Miele ».
+- **Widget** « Appareils Miele » : ce qui tourne, et pour combien de temps.
+
+## Prérequis
+
+- Gladys Assistant **5.1.0** ou plus récent.
+- Des appareils Miele@home **déjà associés** dans l'application Miele (smartphone),
+  avec le compte Miele que vous utiliserez ici.
+- Un accès Internet pour Gladys : tout passe par le cloud Miele, il n'existe pas
+  d'API locale.
+- Des **identifiants développeur Miele** (Client ID et Client Secret), gratuits :
+  voir l'étape 1 ci-dessous.
+- **Gladys Plus n'est pas nécessaire.**
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+**Étape 1 — Demander les identifiants à Miele.** Ouvrez
+[le formulaire de Miele](https://www.miele.com/f/com/en/register_api.aspx) et
+remplissez-le (nom de l'application : par exemple « Gladys »). Miele vous envoie par
+e-mail un **Client ID** et un **Client Secret**. Si le formulaire demande une
+« Redirect URI », indiquez celle que Gladys affiche à l'étape 3 (par défaut
+`https://my.gladysassistant.com/redirect/oauth`).
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+**Étape 2 — Installer l'intégration.** Dans Gladys : **Intégrations → Miele**
+(store) ou **Intégrations → Installer depuis GitHub** avec l'adresse
+`https://github.com/guim31/gladys-miele`.
 
-## Actions
+**Étape 3 — Renseigner et connecter.** Dans l'écran **Configuration** de
+l'intégration :
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+1. collez le **Client ID** et le **Client Secret**, choisissez la **langue**, puis
+   **Enregistrer** ;
+2. sous « Compte Miele », copiez si besoin l'URI de redirection affichée, puis
+   cliquez sur **Connecter** ;
+3. une fenêtre Miele s'ouvre : identifiez-vous avec votre compte Miele (le même que
+   dans l'application) et choisissez votre pays si on vous le demande, puis
+   autorisez l'accès ;
+4. la fenêtre se ferme, le badge de connexion passe au vert.
 
-## Scènes
+**Étape 4 — Ajouter les appareils.** Ouvrez l'onglet **Découverte** de
+l'intégration : chaque appareil Miele du compte y apparaît. Cliquez sur **Ajouter à
+Gladys** pour ceux que vous voulez suivre. Leurs états arrivent aussitôt.
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+Le bouton **Tester la connexion** de l'écran Configuration liste les appareils que
+Miele renvoie : pratique pour vérifier que tout est en place.
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+La **langue** choisie sert aux noms des fonctionnalités des nouveaux appareils, aux
+états et au widget. Les **noms de programmes et de phases** viennent de Miele, qui ne
+les donne qu'en anglais ou en allemand (allemand si vous choisissez l'allemand,
+anglais sinon).
 
-## Tableau de bord
+## Ce que fait chaque appareil
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+| Appareil                                         | Fonctionnalités                                                                                                                                                                 |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lave-linge, lave-linge séchant                   | État, programme, phase, temps restant, temps écoulé, fin prévue, porte, marche/arrêt, énergie et eau du cycle                                                                   |
+| Sèche-linge                                      | Les mêmes, sans l'eau                                                                                                                                                           |
+| Lave-vaisselle                                   | État, programme, phase, temps restant, temps écoulé, fin prévue, porte, marche/arrêt, énergie et eau du cycle                                                                   |
+| Four, four vapeur, micro-ondes, tiroir chauffant | État, programme, phase, temps restant, temps écoulé, fin prévue, porte, température, température de consigne et température à cœur (lecture seule), éclairage (selon le modèle) |
+| Table de cuisson                                 | État (lecture seule)                                                                                                                                                            |
+| Hotte                                            | État, marche/arrêt, éclairage                                                                                                                                                   |
+| Réfrigérateur, congélateur, cave à vin           | État, porte, température et consigne de chaque zone, SuperFroid et/ou SuperFrost, éclairage (caves à vin)                                                                       |
+| Machine à café                                   | État, programme, phase, porte, marche/arrêt, éclairage                                                                                                                          |
+| Robot aspirateur                                 | État, programme, phase, batterie                                                                                                                                                |
+
+Quelques précisions :
+
+- **Fin prévue** : heure de fin calculée à partir du temps restant (et du départ
+  différé s'il y en a un), à l'heure de Gladys. « — » quand rien ne tourne ou que le
+  programme est en pause.
+- **Porte** : capteur d'ouverture, ouvert ou fermé.
+- **Énergie et eau du cycle** : ce que Miele indique pour le cycle en cours ou le
+  dernier cycle, quand l'appareil le mesure (« EcoFeedback »). La valeur reste
+  celle du dernier cycle quand l'appareil est éteint.
+- **Consigne d'un réfrigérateur** : un degré par pas, dans la plage acceptée par
+  l'appareil (de 1 à 9 °C au réfrigérateur, de −28 à −14 °C au congélateur en
+  général).
+- Un appareil qui n'est plus connecté au cloud Miele affiche « Non connecté » et le
+  badge « injoignable ».
+
+## Commandes et sécurité
+
+- **Ce qui est pilotable** : marche/arrêt (lave-linge, sèche-linge, lave-vaisselle,
+  hotte, machine à café), éclairage (hotte, fours, machine à café, caves à vin),
+  consigne de température et SuperFroid/SuperFrost (froid), et l'action de scène
+  « Piloter un appareil Miele » (démarrer, mettre en pause, arrêter).
+- **Ce qui ne l'est jamais** : allumer un four, une table de cuisson, un
+  micro-ondes ou un tiroir chauffant, en changer la température, y lancer un
+  programme. Même si l'API Miele le permettait, l'intégration le refuse. Arrêter un
+  programme de four reste possible.
+- **Démarrer un programme** à distance demande que l'appareil l'accepte : un
+  programme choisi sur la machine, la porte fermée et **Remote Start** (ou
+  **MobileStart**, selon le modèle) activé sur l'appareil. Sinon, l'intégration
+  répond « L'appareil n'accepte pas cette commande maintenant ».
+- **Départ différé** : réglez le programme sur la machine avec Remote Start, puis
+  laissez une scène Gladys programmée le démarrer à l'heure voulue (heures creuses).
+  Un départ différé réglé sur l'appareil lui-même (SmartStart compris) s'affiche dans
+  l'état « Départ différé » et dans l'heure de fin prévue.
+
+## Rafraîchissement et quotas
+
+- L'intégration garde **un flux d'événements** ouvert chez Miele : chaque
+  changement arrive en quelques secondes, sans requête supplémentaire.
+- En complément, elle **relit tout le compte toutes les 30 minutes** (une requête,
+  plus une par appareil pilotable). Si le flux est coupé, elle relit **toutes les
+  2 minutes** jusqu'à son retour.
+- Elle ne dépend pas du sondage de Gladys (peu fiable sur les intégrations
+  externes) : elle se rafraîchit elle-même.
+- Miele ne publie pas de quota chiffré pour son API ; ce rythme reste bien en deçà
+  de celui de Home Assistant (une lecture toutes les 2 minutes en permanence). Les
+  conditions d'utilisation de Miele s'appliquent à vos identifiants.
+- Seuls les **changements** sont envoyés à Gladys, plus un rappel toutes les 6 heures
+  d'une valeur qui ne bouge pas (sinon Gladys la croirait périmée).
+
+## Widget
+
+Le widget **Appareils Miele** (Tableau de bord → Modifier → ajouter un widget →
+Miele) liste les appareils ajoutés à Gladys qui sont en marche, en pause, en attente
+d'un départ différé, terminés ou en défaut, les plus pressés d'abord : programme,
+phase, heure de fin et un badge avec le temps restant ou l'état. Les réfrigérateurs,
+toujours « en marche », n'y figurent pas. Il se met à jour chaque minute et dès qu'un
+appareil démarre ou s'arrête. Il n'a aucun réglage.
+
+## Déclencheurs et actions de scène
+
+**Déclencheur « Programme Miele terminé »** : un appareil passe de « En marche »
+(ou « En pause ») à « Terminé ». Filtre facultatif : l'appareil. Variables
+utilisables dans les actions suivantes : nom de l'appareil, programme, énergie
+consommée (kWh) et eau consommée (litres) quand Miele les donne. Il ne se déclenche
+qu'une fois par fin de programme, jamais au redémarrage de Gladys.
+
+**Déclencheur « Défaut d'un appareil Miele »** : un appareil passe en état
+« Défaut » ou signale une panne. Filtre facultatif : l'appareil. Variable : nom de
+l'appareil.
+
+**Action « Piloter un appareil Miele »** : démarrer, mettre en pause ou arrêter le
+programme d'un appareil. Démarrer et mettre en pause : lave-linge, sèche-linge,
+lave-vaisselle seulement. Arrêter : aussi fours, hotte et machine à café. Sortie :
+« Commande envoyée ». En cas de refus, l'action échoue avec la raison, la scène
+continue.
+
+Pas de déclencheur « porte ouverte trop longtemps » : le déclencheur standard de
+Gladys sur la porte (capteur d'ouverture) avec l'option **« pendant »** le fait
+déjà, sur n'importe quel appareil.
+
+## Exemples de scènes
+
+- **Lessive terminée** : déclencheur « Programme Miele terminé » (appareil : le
+  lave-linge) → envoyer un message « La lessive est finie
+  ({{triggerEvent.data.program}}, {{triggerEvent.data.energy_kwh}} kWh) ».
+- **Lave-vaisselle aux heures creuses** : préparez le programme le soir avec Remote
+  Start activé ; une scène programmée à 1 h 30 lance « Piloter un appareil Miele →
+  Démarrer ».
+- **Congélateur resté ouvert** : déclencheur « Porte du congélateur = ouvert
+  pendant 3 minutes » → notification.
+- **Panne** : déclencheur « Défaut d'un appareil Miele » → message avec
+  `{{triggerEvent.data.device_name}}`.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« Renseignez le Client ID et le Client Secret… »** : les champs sont vides ou
+  non enregistrés.
+- **La fenêtre Miele refuse la connexion ou l'URI de redirection** : vérifiez le
+  Client ID ; si votre application Miele a une URI de redirection enregistrée, elle
+  doit être exactement celle affichée sous « Compte Miele ».
+- **« Cette connexion a expiré… »** : plus de 15 minutes entre le clic sur
+  Connecter et la fin de l'identification, ou connexion lancée depuis un autre
+  Gladys. Cliquez à nouveau sur Connecter.
+- **« Miele a refusé l'autorisation enregistrée »** : l'accès a été révoqué, le mot
+  de passe Miele a changé ou le Client ID a été modifié : cliquez sur Connecter.
+- **Aucun appareil dans Découverte** : le bouton **Tester la connexion** dit ce que
+  Miele renvoie. Un compte vide signifie que les appareils sont associés à un autre
+  compte Miele.
+- **« L'appareil n'accepte pas cette commande maintenant »** : porte ouverte, pas
+  de programme choisi, Remote Start/MobileStart désactivé, ou appareil déjà dans
+  l'état demandé.
+- **Journaux** : rien n'est écrit pendant le fonctionnement normal. Pour tout voir,
+  passez la variable `LOG_LEVEL=debug` au conteneur. Aucun jeton ni secret n'est
+  jamais journalisé.
+
+## Limites
+
+- Pas de choix du programme à distance (pas de liste de programmes dans Gladys) :
+  on démarre celui préparé sur la machine.
+- Noms de programmes et de phases en anglais ou en allemand (limite de l'API Miele).
+- Pas de pilotage des fours, tables de cuisson et micro-ondes (choix de sécurité),
+  ni du robot aspirateur, ni de la vitesse de la hotte.
+- Les niveaux de TwinDos/PowerDisk, les plaques d'une table de cuisson et le
+  départ différé réglé à distance ne sont pas repris.
+- Dépend du cloud Miele : sans Internet ou si Miele est en panne, plus de mise à
+  jour (les appareils fonctionnent normalement).
+- Les noms des fonctionnalités sont figés quand l'appareil est ajouté : changer la
+  langue ne renomme que les nouveaux appareils (les états, eux, changent de langue).
+
+## Données et confidentialité
+
+- Les **jetons d'accès Miele** sont conservés dans le volume `/data` de
+  l'intégration (fichier lisible par elle seule), jamais dans la configuration de
+  Gladys ni dans les journaux.
+- Le **Client Secret** est un champ secret de Gladys : il n'est jamais réaffiché.
+- L'identification se fait sur la page de Miele : l'intégration ne voit jamais votre
+  mot de passe. La page de redirection de Gladys (`my.gladysassistant.com`) ne fait
+  que renvoyer votre navigateur vers votre Gladys ; le code qu'elle voit passer est
+  inutilisable sans le Client Secret.
+- L'intégration ne parle qu'à `api.mcs3.miele.com`.

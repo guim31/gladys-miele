@@ -11,17 +11,21 @@ Gladys through
 [`@gladysassistant/integration-sdk`](https://github.com/GladysAssistant/integration-sdk-js),
 its only runtime dependency. It started from the official JavaScript template.
 
+This one follows **Miele@home** appliances through the official Miele 3rd Party
+API (cloud, OAuth2), see "Miele" below.
+
 ## Commands
 
 ```bash
 npm install
 npm test                                  # node --test, the built-in runner
-node --test test/devices.test.js          # one file
-node --test --test-name-pattern "plug"    # tests whose name matches
+node --test test/hub.test.js              # one file
+node --test --test-name-pattern "oven"    # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
 npx github:GladysAssistant/integration-store .   # store admission checks
+MIELE_CLIENT_ID=… MIELE_CLIENT_SECRET=… node scripts/probe.mjs   # real API, read only (see the file)
 ```
 
 The CI (`.github/workflows/ci.yml`) runs `format:check`, `lint` and `test` on
@@ -31,16 +35,25 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+index.js                          entry point: SDK client + src/app.js + connect()
+src/app.js                        every SDK handler, wired on a Gladys client (real or fake)
+src/hub.js                        live picture of the account: reads, stream, timer, states, triggers, commands
+src/appliances.js                 one Gladys device per appliance: features per family, states from the API answer
+src/commands.js                   command bodies + the safety and availability gates
+src/scenes.js                     scene action handlers (manifest `scene_actions`), trigger keys
+src/widgets.js                    dashboard widget "Miele appliances" (manifest `widgets`)
+src/i18n.js                       every text, in en / fr / de / es
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+src/issues.js                     repeated failures logged once, recovery once
+src/miele/constants.js            API codes: types, families, statuses, actions, endpoints
+src/miele/client.js               OAuth2 (code grant, refresh) + REST client, injectable fetch
+src/miele/auth-store.js           tokens and pending OAuth state in /data/miele-auth.json (mode 600)
+src/miele/events.js               SSE stream (/devices/all/events): parser, reconnection, watchdog
+scripts/probe.mjs                 real API probe, read only, for a machine with network
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (same sections)
+test/                             node --test, SDK fake Gladys + a fake Miele (test/helpers/)
+test/fixtures/miele/              real API answers from Home Assistant's tests (Apache-2.0)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +83,10 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** is in four languages (English, French, German with
+  "du", Spanish with "usted"): action messages, manifest texts, feature names,
+  widget, and `docs/en.md` / `fr.md` / `de.md` / `es.md`, with the same
+  sections. `test/i18n.test.js` enforces it.
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +248,59 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Miele (propre à cette intégration)
+
+**API et authentification**
+
+- API officielle « Miele 3rd Party API » : `https://api.mcs3.miele.com/v1`. OAuth2 « authorization code » sur
+  `https://api.mcs3.miele.com/thirdparty/login` et `/thirdparty/token` (ceux de Home Assistant). pymiele connaît aussi
+  un royaume Keycloak (`auth.domestic.miele-iot.com`, scopes `mcs_thirdparty_*`) que HA n'utilise pas encore : si Miele
+  coupe les anciens points, c'est là qu'il faut aller (`src/miele/constants.js`).
+- Identifiants développeur gratuits, un par utilisateur (formulaire `register_api.aspx`, réponse par e-mail). Le champ
+  `oauth2` du cœur relaie le parcours, avec la page `my.gladysassistant.com/redirect/oauth` : **pas besoin de Gladys
+  Plus**. Le cœur attend l'ack du callback **5 s** : l'échange du code a 3,5 s, la première lecture part après l'ack.
+- Jetons dans `/data/miele-auth.json` (600), liés au `client_id` : changer de Client ID oblige à se reconnecter. L'état
+  anti-CSRF y est aussi (15 min, usage unique) : une mise à jour entre « Connecter » et le retour ne casse rien.
+- La langue de l'API (noms de programmes et de phases) n'existe qu'en `de` et `en` (absente ou inconnue → anglais).
+  Les états sont traduits par l'intégration, à partir de `status.value_raw`.
+
+**Données**
+
+- `GET /devices` renvoie tous les appareils, indexés par numéro de série (= `fabNumber`) : c'est l'identifiant de
+  plateforme (`appliance:<serial>`). Valeurs « vides » : `ProgramID`/`programPhase` 0 ou 65535, températures
+  `-32768` (centièmes de degré, parfois déjà mises à l'échelle `-3276800`) : tout ce qui est sous le zéro absolu est
+  « pas de valeur ». Un appareil `status 255` (non connecté) a tous ses champs à `null`.
+- `signalDoor: true` = porte **ouverte** → publier **0** (capteur d'ouverture Gladys).
+- Les réfrigérateurs et congélateurs sont **toujours** `status 5` (« en marche ») : ne pas les compter comme
+  « en cours » (widget).
+- `GET /devices/{id}/actions` dit ce que l'appareil accepte **maintenant** (`processAction`, `powerOn`, `powerOff`,
+  `light`, plages `targetTemperature` par zone). La structure des appareils ne doit **pas** en dépendre (elle change
+  avec l'état) : les fonctionnalités se décident par famille de type ; seules les bornes des consignes en viennent,
+  avec des valeurs par défaut.
+- Flux SSE `/devices/all/events` : trames `devices` (même forme que `GET /devices`), `actions`, `ping` (~20 s).
+  Chien de garde à 2 min. Relecture complète toutes les 30 min (2 min sans flux).
+
+**Sécurité (choix de Guilhem)**
+
+- Rien de ce qui chauffe des aliments ne s'allume à distance : fours, tables, micro-ondes, tiroirs chauffants n'ont
+  que l'éclairage en écriture. Double barrière : les fonctionnalités (`src/appliances.js`) et
+  `COMMAND_KEYS_BY_FAMILY`/`PROGRAM_COMMANDS` (`src/commands.js`), testées séparément.
+- « Démarrer » n'existe que pour lave-linge, sèche-linge, lave-vaisselle, et exige Remote Start/MobileStart sur
+  l'appareil. Le départ différé « à distance » se fait par une scène Gladys programmée ; l'action `startTime` de
+  l'API n'est pas utilisée (sémantique non vérifiée).
+
+**Non vérifié sans compte ni appareil**
+
+- Le parcours OAuth réel (le formulaire Miele demande-t-il une URI de redirection ? `vg`/pays nécessaire ?), la durée
+  des jetons, le comportement réel du flux (envoie-t-il l'état complet à la connexion ?), les quotas.
+  `scripts/probe.mjs` les éprouve depuis une machine qui a le réseau.
+
+**Piège du cœur relevé ici**
+
+- Le front affiche le nom de l'**appareil** (pas celui de la fonctionnalité) quand une fonctionnalité est seule de son
+  **type** sur l'appareil — la comparaison porte sur `type` seulement, pas sur la catégorie
+  (`front/src/utils/device.js`, `matchFeature`) : `temperature-sensor/decimal` et `volume-sensor/decimal` comptent
+  comme le même type.
+- Le front allemand traduit `volume-sensor` par « Lautstärke » (volume sonore) : le nom de la fonctionnalité
+  (« Wasser des Programms ») compte d'autant plus.
